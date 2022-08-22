@@ -11,12 +11,12 @@ import (
 	"net/http"
 	"time"
 
-	//"github.com/jinzhu/gorm"
+	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/mysql"
 	"github.com/joho/godotenv"
 )
 
-// var db *gorm.DB
+var db *gorm.DB
 
 type AnimeModel struct {
 	Data []struct {
@@ -39,7 +39,7 @@ type AnimeModel struct {
 			} `json:"titles"`
 			CanonicalTitle    string        `json:"canonicalTitle"`
 			AbbreviatedTitles []interface{} `json:"abbreviatedTitles"`
-			AverageRating     interface{}   `json:"averageRating"`
+			AverageRating     string        `json:"averageRating"`
 			RatingFrequencies struct {
 				Num4  string `json:"4"`
 				Num9  string `json:"9"`
@@ -51,7 +51,7 @@ type AnimeModel struct {
 			EndDate        string      `json:"endDate"`
 			NextRelease    interface{} `json:"nextRelease"`
 			PopularityRank int         `json:"popularityRank"`
-			RatingRank     interface{} `json:"ratingRank"`
+			RatingRank     int         `json:"ratingRank"`
 			AgeRating      string      `json:"ageRating"`
 			AgeRatingGuide string      `json:"ageRatingGuide"`
 			Subtype        string      `json:"subtype"`
@@ -210,23 +210,25 @@ func main() {
 		log.Fatalf("failed to load environment variables: %v", err)
 	}
 
-	// Dbdriver := os.Getenv("DB_DRIVER")
-	// DbHost := os.Getenv("DB_HOST")
-	// DbUser := os.Getenv("DB_USER")
-	// DbPassword := os.Getenv("DB_PASSWORD")
-	// DbName := os.Getenv("DB_NAME")
-	// DbPort := os.Getenv("DB_PORT")
+	Dbdriver := os.Getenv("DB_DRIVER")
+	DbHost := os.Getenv("DB_HOST")
+	DbUser := os.Getenv("DB_USER")
+	DbPassword := os.Getenv("DB_PASSWORD")
+	DbName := os.Getenv("DB_NAME")
+	DbPort := os.Getenv("DB_PORT")
 
-	// DBURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", DbUser, DbPassword, DbHost, DbPort, DbName)
+	DBURL := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8&parseTime=True&loc=Local", DbUser, DbPassword, DbHost, DbPort, DbName)
 
-	// db, err = gorm.Open("mysql", DBURL)
+	db, err = gorm.Open("mysql", DBURL)
 
-	// if err != nil {
-	// 	fmt.Printf("Cannot connect to %s database", Dbdriver)
-	// 	log.Fatal("This is the error:", err)
-	// } else {
-	// 	fmt.Printf("We are connected to the %s database", Dbdriver)
-	// }
+	if err != nil {
+		fmt.Printf("Cannot connect to %s database", Dbdriver)
+		log.Fatal("This is the error:", err)
+	} else {
+		fmt.Printf("We are connected to the %s database", Dbdriver)
+	}
+
+	db.AutoMigrate(&Anime{})
 
 	// Connect to PlanetScale database using DSN environment variable.
 	// db, err := gorm.Open(mysql.Open(os.Getenv("DSN")), &gorm.Config{
@@ -260,11 +262,60 @@ func main() {
 			fmt.Println(err)
 		}
 		for i := 0; i < len(anime.Data); i++ {
-			fmt.Print(anime.Data[i].Attributes.Titles.En)
+			id := anime.Data[i].ID
+			synopsis := anime.Data[i].Attributes.Synopsis
+			discription := anime.Data[i].Attributes.Description
+			titleEn := anime.Data[i].Attributes.Titles.En
+			titleEnJp := anime.Data[i].Attributes.Titles.EnJp
+			avaregeRating := anime.Data[i].Attributes.AverageRating
+			popularityRank := anime.Data[i].Attributes.PopularityRank
+			ratingRank := anime.Data[i].Attributes.RatingRank
+			ageRating := anime.Data[i].Attributes.AgeRating
+			ageRatingGuide := anime.Data[i].Attributes.AgeRatingGuide
+			status := anime.Data[i].Attributes.Status
+			posterImage := anime.Data[i].Attributes.PosterImage.Original
+			episodeCount := anime.Data[i].Attributes.EpisodeCount
+			subType := anime.Data[i].Attributes.Subtype
+
+			animeData := &Anime{
+				ID:             id,
+				Synopsis:       synopsis,
+				Description:    discription,
+				TitleEn:        titleEn,
+				TitleEnJp:      titleEnJp,
+				AverageRating:  avaregeRating,
+				PopularityRank: popularityRank,
+				RatingRank:     ratingRank,
+				AgeRating:      ageRating,
+				AgeRatingGuide: ageRatingGuide,
+				Status:         status,
+				PosterImage:    posterImage,
+				EpisodeCount:   episodeCount,
+				Subtype:        subType,
+			}
+
+			db.Table("animes").Create(&animeData)
+
 		}
-		fmt.Print("\n \n next \n \n")
 
 		time.Sleep(time.Millisecond * 100)
 	}
 
+}
+
+type Anime struct {
+	ID             string `gorm:"primary_key" column:"id"`
+	Synopsis       string `column:"synopsis"`
+	Description    string `column:"description"`
+	TitleEn        string `column:"title_en"`
+	TitleEnJp      string `column:"title_en_jp"`
+	AverageRating  string `column:"average_rating"`
+	PopularityRank int    `column:"popularity_rank"`
+	RatingRank     int    `column:"rating_rank"`
+	AgeRating      string `column:"age_rating"`
+	AgeRatingGuide string `column:"age_rating_guide"`
+	Status         string `column:"status"`
+	PosterImage    string `column:"poster_image"`
+	EpisodeCount   int    `column:"episode_count"`
+	Subtype        string `column:"subtype"`
 }
