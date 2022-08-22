@@ -241,7 +241,7 @@ func main() {
 
 	fmt.Println(baseUrl)
 
-	for offset := 0; offset < 6; offset = offset + 2 {
+	for offset := 0; offset < 18000; offset = offset + 20 {
 		url := fmt.Sprintf(`%s%d`, baseUrl, offset)
 		resp, err := http.Get(url)
 		if err != nil {
@@ -298,7 +298,7 @@ func main() {
 
 		}
 
-		time.Sleep(time.Millisecond * 100)
+		time.Sleep(time.Millisecond * 200)
 	}
 
 }
